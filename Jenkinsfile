@@ -42,25 +42,27 @@ pipeline {
         // 🧠 Análisis Estático de Código (SonarQube)
         stage('Static Code Analysis') {
             steps {
-                sh '''
-                    # Verificar si SonarQube está disponible
-                    if ! curl -sf ${SONARQUBE_URL}/api/system/status > /dev/null 2>&1; then
-                        echo "⚠️  SonarQube no disponible"
-                        echo "✅ Saltando análisis (opcional)"
-                        exit 0
-                    fi
+                withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONARQUBE_TOKEN')]) {
+                    sh '''
+                        # Verificar si SonarQube está disponible
+                        if ! curl -sf ${SONARQUBE_URL}/api/system/status > /dev/null 2>&1; then
+                            echo "⚠️  SonarQube no disponible"
+                            echo "✅ Saltando análisis (opcional)"
+                            exit 0
+                        fi
 
-                    MAVEN_VERSION="3.9.0"
-                    MAVEN_HOME="/tmp/apache-maven-${MAVEN_VERSION}"
-                    export PATH="${MAVEN_HOME}/bin:$PATH"
+                        MAVEN_VERSION="3.9.0"
+                        MAVEN_HOME="/tmp/apache-maven-${MAVEN_VERSION}"
+                        export PATH="${MAVEN_HOME}/bin:$PATH"
 
-                    echo "🔍 Ejecutando análisis SonarQube..."
-                    mvn sonar:sonar \
-                        -Dsonar.projectKey=${SONARQUBE_PROJECT_KEY} \
-                        -Dsonar.sources=src \
-                        -Dsonar.host.url=${SONARQUBE_URL} \
-                        -Dsonar.login=${SONARQUBE_TOKEN} || true
-                '''
+                        echo "🔍 Ejecutando análisis SonarQube..."
+                        mvn sonar:sonar \
+                            -Dsonar.projectKey=${SONARQUBE_PROJECT_KEY} \
+                            -Dsonar.sources=src \
+                            -Dsonar.host.url=${SONARQUBE_URL} \
+                            -Dsonar.login=${SONARQUBE_TOKEN} || true
+                    '''
+                }
             }
         }
 
@@ -109,7 +111,7 @@ pipeline {
 
                     export PATH="${TRIVY_HOME}:$PATH"
                     echo "🔍 Ejecutando escaneo de vulnerabilidades con Trivy..."
-                    trivy image --severity HIGH,CRITICAL cicd-demo:latest
+                    trivy image --timeout 30m --severity HIGH,CRITICAL cicd-demo:latest
                 '''
             }
         }
@@ -120,7 +122,7 @@ pipeline {
                 sh '''
                     export PATH="/tmp/trivy:$PATH"
                     echo "🔒 Verificando vulnerabilidades CRITICAL..."
-                    if trivy image --exit-code 1 --severity CRITICAL cicd-demo:latest; then
+                    if trivy image --timeout 30m --exit-code 1 --severity CRITICAL cicd-demo:latest; then
                         echo "✅ No hay vulnerabilidades CRITICAL"
                     else
                         echo "❌ FALLO: Se encontraron vulnerabilidades CRITICAL"
