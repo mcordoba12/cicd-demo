@@ -15,14 +15,16 @@ pipeline {
 
         stage('Docker Build & Push') {
             steps {
-                sh "make dockerLogin build dockerBuild dockerPush"
+                sh 'docker build -t cicd-demo:latest .'
+                sh 'docker tag cicd-demo:latest cicd-demo:${BUILD_NUMBER}'
+                echo 'Docker build completado (push omitido en entorno local)'
             }
         }
 
         // 🔍 Escaneo de vulnerabilidades (Trivy)
         stage('Docker Scan') {
             steps {
-                sh "make dockerScan"
+                sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --exit-code 0 cicd-demo:latest'
             }
             post {
                 always {
