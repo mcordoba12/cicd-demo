@@ -16,7 +16,15 @@ pipeline {
         stage('Docker Build & Push') {
             steps {
                 sh '''
-                    sudo apt-get update -qq && sudo apt-get install -y maven
+                    # Descargar y extraer Maven
+                    MAVEN_VERSION="3.9.0"
+                    MAVEN_HOME="/tmp/apache-maven-${MAVEN_VERSION}"
+
+                    if [ ! -d "${MAVEN_HOME}" ]; then
+                        curl -fsSL https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz | tar xzf - -C /tmp
+                    fi
+
+                    export PATH="${MAVEN_HOME}/bin:$PATH"
                     mvn clean package -DskipTests
                     docker build -t cicd-demo:latest .
                     docker tag cicd-demo:latest cicd-demo:${BUILD_NUMBER}
