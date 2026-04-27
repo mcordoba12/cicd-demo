@@ -1,37 +1,120 @@
-# CICD-DEMO
+# CI/CD Pipeline - Complete Exercise Solution ✅
 
-A skeleton project to apply **Continuous Integration (CI)** and **Continuous Delivery (CD)** with a complete pipeline that includes security analysis, vulnerability scanning, and automated deployments.
+A complete **Continuous Integration and Continuous Delivery (CI/CD)** pipeline implementation using Jenkins, with automated code analysis, security scanning, and quality gates.
 
-## 🏗️ Complete Pipeline Flow
+## ✅ Exercise Requirements Completed
+
+| Requirement | Status | Details |
+|-------------|--------|---------|
+| **Static Analysis (20 min)** | ✅ Complete | SonarQube integration - Local server configured for code analysis |
+| **Security Scanning (20 min)** | ✅ Complete | Trivy auto-downloaded and installed - Vulnerability scanning on Docker image |
+| **Quality Gates (20 min)** | ✅ Complete | Automated gatekeeping - Pipeline fails if Security Hotspot detected or CRITICAL vulnerabilities found |
+| **Infrastructure & Cleanup (30 min)** | ✅ Complete | Post stage configured - Full documentation in this README |
+
+---
+
+## 🔄 Pipeline Flow
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                          AUTOMATED CI/CD FLOW                                 │
-└──────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│           JENKINS CI/CD PIPELINE FLOW                    │
+└─────────────────────────────────────────────────────────┘
 
-  ┌─────────────┐         ┌──────────────┐        ┌──────────────┐
-  │  Checkout   │    ─→   │ Build & Test │   ─→   │ Docker Build │
-  │  (SCM)      │         │  (Maven)     │        │  & Push      │
-  └─────────────┘         └──────────────┘        └──────────────┘
-                                                          │
-                                                          ↓
-  ┌──────────────┐        ┌─────────────────┐    ┌──────────────┐
-  │ Deploy QA    │   ←─   │ Quality Gate ✓  │←─  │ SonarQube    │
-  │ (Kubernetes) │        │ (Master/Release)│    │ Analysis     │
-  └──────────────┘        └─────────────────┘    └──────────────┘
-        ↑                                                 ↑
-        │                                                 │
-  ┌──────────────┐        ┌─────────────────┐
-  │ Deploy Dev   │   ←─   │ Security Gate ✓ │←─  Trivy Scan
-  │ (Kubernetes) │        │ (CRITICAL-only) │    (Vulnerabilities)
-  └──────────────┘        └─────────────────┘
-                                │
-                                ↓
-                        ┌──────────────┐
-                        │ Docker Scan  │
-                        │  (Trivy)     │
-                        └──────────────┘
+1. Docker Build & Push
+   ├─ Download Maven 3.9.0 (if needed)
+   ├─ Compile: mvn clean package -DskipTests
+   ├─ Build Docker image
+   └─ Tag: cicd-demo:BUILD_NUMBER
+           │
+           ↓
+2. Static Code Analysis (SonarQube)
+   ├─ Run mvn sonar:sonar
+   ├─ Analyze: bugs, code smells, vulnerabilities
+   └─ Report to http://localhost:9000
+           │
+           ↓
+3. Quality Gate (SonarQube)
+   ├─ Wait for SonarQube analysis
+   ├─ FAIL if Security Hotspot detected ⛔
+   └─ MAX timeout: 2 minutes
+           │
+           ↓
+4. Docker Scan (Trivy)
+   ├─ Download Trivy 0.70.0 (if needed)
+   ├─ Scan image for vulnerabilities
+   └─ Report: HIGH, CRITICAL issues
+           │
+           ↓
+5. Security Gate (Trivy)
+   ├─ Check for CRITICAL vulnerabilities
+   ├─ FAIL if any CRITICAL found ⛔
+   └─ Blocks deployment of insecure image
+           │
+           ↓
+6. Build Info & Cleanup
+   ├─ Show build number, URL, image tag
+   ├─ Clean Docker dangling images
+   └─ SUCCESS: All gates passed ✅
 ```
+
+---
+
+## 🚀 Quick Start
+
+### 1. SonarQube Setup
+
+**Start SonarQube locally:**
+```bash
+docker run -d --name sonarqube -p 9000:9000 sonarqube:latest
+```
+
+**Access:** http://localhost:9000
+- Username: `admin`
+- Password: `admin`
+
+**Generate Token:**
+1. My Account > Security > Generate Tokens
+2. Name: `sonarqube-token`
+3. Copy the token
+
+### 2. Jenkins - Add SonarQube Credentials
+
+**Via Jenkins UI:**
+1. Manage Jenkins > Credentials > System > Global credentials
+2. Add Credentials > Secret text
+3. Paste your SonarQube token
+4. ID: `sonarqube-token`
+5. Save
+
+**Via Jenkins Script Console:**
+```groovy
+import com.cloudbees.plugins.credentials.impl.*
+import com.cloudbees.plugins.credentials.domains.*
+import jenkins.model.Jenkins
+
+store = Jenkins.instance.getExtensionList('com.cloudbees.plugins.credentials.SystemCredentialsProvider')[0].getStore()
+domain = Domain.global()
+
+cred = new StringCredentialsImpl(
+  CredentialsScope.GLOBAL,
+  "sonarqube-token",
+  "SonarQube Token",
+  Secret.fromString("YOUR_TOKEN_HERE")
+)
+
+store.addCredentials(domain, cred)
+```
+
+### 3. Create Jenkins Pipeline Job
+
+1. New Item > Pipeline
+2. Name: `mi-pipeline-demo`
+3. Definition: Pipeline script from SCM
+4. SCM: Git
+5. Repository URL: `https://github.com/mcordoba12/cicd-demo`
+6. Branch: `*/master`
+7. Script Path: `Jenkinsfile`
+8. Save and Build
 
 ---
 
@@ -96,6 +179,129 @@ curl http://localhost:8080
 # SonarQube (wait ~1 minute)
 curl http://localhost:9000
 ```
+
+---
+
+## 🔧 Pipeline Stages Detailed
+
+### Stage 1: Docker Build & Push
+**Purpose:** Compile Java code and build Docker image
+
+```bash
+# Downloads Maven 3.9.0 (if not exists)
+# Compiles: mvn clean package -DskipTests
+# Builds: docker build -t cicd-demo:latest .
+# Tags: cicd-demo:${BUILD_NUMBER}
+```
+
+**Fails if:**
+- Maven compilation fails
+- Docker build fails
+- Dockerfile is invalid
+
+**Tools Used:**
+- Maven 3.9.0
+- Docker
+
+---
+
+### Stage 2: Static Code Analysis (SonarQube)
+**Purpose:** Analyze code quality and identify issues
+
+```bash
+mvn sonar:sonar \
+    -Dsonar.projectKey=cicd-demo \
+    -Dsonar.sources=src \
+    -Dsonar.host.url=http://localhost:9000 \
+    -Dsonar.login=${SONARQUBE_TOKEN}
+```
+
+**Analyzes:**
+- 🐛 Bugs
+- 💨 Code Smells
+- 🔒 Vulnerabilities
+- 📊 Code Coverage
+- 🎯 Maintainability
+
+**Requirements:**
+- SonarQube running at http://localhost:9000
+- Valid `sonarqube-token` credential
+- Network connectivity
+
+**View Results:**
+- Dashboard: http://localhost:9000/dashboard?id=cicd-demo
+
+---
+
+### Stage 3: Quality Gate (SonarQube)
+**Purpose:** Enforce code quality standards ⛔
+
+```bash
+# Polls SonarQube Quality Gate status
+# Timeout: 2 minutes (24 attempts, 5sec each)
+```
+
+**FAILS if:**
+- ❌ Security Hotspot detected
+- ❌ Coverage threshold not met
+- ❌ Quality Gate status = ERROR
+
+**PASSES if:**
+- ✅ All quality criteria met
+- ✅ No Security Hotspots
+- ✅ Quality Gate status = OK
+
+---
+
+### Stage 4: Docker Scan (Trivy)
+**Purpose:** Scan Docker image for vulnerabilities
+
+```bash
+# Downloads Trivy 0.70.0 (if not exists)
+# Runs: trivy image --severity HIGH,CRITICAL cicd-demo:latest
+```
+
+**Reports:**
+- Vulnerable dependencies
+- OS package vulnerabilities
+- CVE details and fix recommendations
+
+**Output Example:**
+```
+Target Image: cicd-demo:latest
+
+Vulnerabilities
+┌────────────────────────────────────────┐
+│ Severity   │ Count                      │
+├────────────┼────────────────────────────┤
+│ CRITICAL   │ 2      (⚠️ BLOCKS DEPLOY) │
+│ HIGH       │ 10     (Review soon)       │
+│ MEDIUM     │ 25     (Track & monitor)   │
+│ LOW        │ 50     (Informational)     │
+└────────────────────────────────────────┘
+```
+
+---
+
+### Stage 5: Security Gate (Trivy)
+**Purpose:** Block deployment if CRITICAL vulnerabilities exist ⛔
+
+```bash
+# Strict check: exit-code 1 if CRITICAL found
+trivy image --exit-code 1 --severity CRITICAL cicd-demo:latest
+```
+
+**FAILS if:**
+- ❌ Any CRITICAL vulnerability detected
+- ❌ Trivy returns exit code 1
+
+**PASSES if:**
+- ✅ No CRITICAL vulnerabilities
+- ✅ Exit code = 0
+
+**Impact:**
+- 🛑 **Stops entire pipeline** - No deployment of insecure image
+- Security-first approach
 
 ---
 
@@ -206,7 +412,145 @@ Once authenticated:
 
 ---
 
-## 🛡️ Interpreting Trivy Security Report
+## 🚨 Troubleshooting Guide
+
+### Issue: Quality Gate Fails - "Security Hotspot Detected"
+
+**Error Message:**
+```
+❌ Quality Gate FALHOU - Security Hotspot detectado
+```
+
+**Root Cause:**
+SonarQube found security issues in your code.
+
+**Solution:**
+1. Visit: http://localhost:9000/dashboard?id=cicd-demo
+2. Click "Security Hotspots" section
+3. Review each issue and fix the code
+4. Commit changes: `git push origin master`
+5. Trigger pipeline again
+
+**Common Fixes:**
+- Fix hardcoded credentials
+- Remove SQL injection vulnerabilities
+- Fix XSS vulnerabilities
+- Remove insecure serialization
+
+---
+
+### Issue: Security Gate Fails - "CRITICAL Vulnerabilities Found"
+
+**Error Message:**
+```
+❌ FALLO: Se encontraron vulnerabilidades CRITICAL
+```
+
+**Root Cause:**
+Trivy detected CRITICAL severity vulnerabilities in dependencies.
+
+**Solution:**
+
+**Option 1: Update Dependencies**
+```bash
+# Check vulnerable library
+trivy image cicd-demo:latest | grep -i critical
+
+# Update in pom.xml
+mvn versions:use-latest-versions
+mvn dependency:update-dependencies
+
+git add pom.xml
+git commit -m "chore: update vulnerable dependencies"
+git push origin master
+```
+
+**Option 2: Use Secure Base Image**
+```dockerfile
+# Old (less secure)
+FROM openjdk:11-jre-slim-buster
+
+# New (more secure)
+FROM eclipse-temurin:17-jre-alpine
+```
+
+**Option 3: Add Trivy Exceptions** (Temporary, not recommended)
+```bash
+# Create .trivyignore
+echo "CVE-2021-XXXX" >> .trivyignore
+```
+
+---
+
+### Issue: Maven Download Fails
+
+**Error Message:**
+```
+mvn: not found
+```
+
+**Solutions:**
+1. Check internet connectivity
+2. Verify Apache Archive URL is accessible:
+   ```bash
+   curl -I https://archive.apache.org/dist/maven/maven-3/3.9.0/binaries/
+   ```
+3. Try manual download:
+   ```bash
+   cd /tmp && curl -sL https://archive.apache.org/dist/maven/maven-3/3.9.0/binaries/apache-maven-3.9.0-bin.tar.gz | tar xz
+   ```
+
+---
+
+### Issue: SonarQube Not Responding
+
+**Error Message:**
+```
+Connection refused or timeout
+```
+
+**Solutions:**
+```bash
+# Check if SonarQube is running
+curl http://localhost:9000/api/system/status
+
+# Start SonarQube
+docker run -d --name sonarqube -p 9000:9000 sonarqube:latest
+
+# Restart if already running
+docker restart sonarqube
+
+# Check logs
+docker logs sonarqube
+```
+
+---
+
+### Issue: Trivy Download Fails
+
+**Error Message:**
+```
+error downloading Trivy archive
+```
+
+**Solutions:**
+```bash
+# Verify GitHub is accessible
+curl -I https://github.com/aquasecurity/trivy/releases/download/
+
+# Manual download and setup
+cd /tmp
+mkdir -p trivy
+cd trivy
+curl -sL https://github.com/aquasecurity/trivy/releases/download/v0.70.0/trivy_0.70.0_Linux-64bit.tar.gz -o trivy.tar.gz
+tar xzf trivy.tar.gz
+export PATH="/tmp/trivy:$PATH"
+trivy version
+```
+
+---
+
+## 📊 Interpreting Results
 
 ### Report Structure
 
