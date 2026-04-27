@@ -36,14 +36,21 @@ pipeline {
         stage('Docker Scan') {
             steps {
                 sh '''
-                    # Descargar Trivy a /tmp
+                    # Descargar Trivy binario directamente desde GitHub
                     TRIVY_HOME="/tmp/trivy"
                     if [ ! -f "${TRIVY_HOME}/trivy" ]; then
                         mkdir -p ${TRIVY_HOME}
-                        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b ${TRIVY_HOME}
+                        cd ${TRIVY_HOME}
+                        TRIVY_VERSION="0.70.0"
+                        echo "Descargando Trivy ${TRIVY_VERSION}..."
+                        curl -sL https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz -o trivy.tar.gz
+                        tar xzf trivy.tar.gz
+                        rm trivy.tar.gz
+                        cd -
                     fi
 
                     export PATH="${TRIVY_HOME}:$PATH"
+                    echo "Ejecutando escaneo con Trivy..."
                     trivy image --timeout 10m --exit-code 0 --severity HIGH,CRITICAL cicd-demo:latest || true
                 '''
             }
