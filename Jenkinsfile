@@ -16,8 +16,8 @@ pipeline {
         stage('Docker Build & Push') {
             steps {
                 sh '''
-                    docker run --rm -v $(pwd):/workspace -w /workspace maven:3.9-eclipse-temurin-17 \
-                        mvn clean package -DskipTests
+                    curl -fsSL https://archive.apache.org/dist/maven/maven-3/3.9.0/binaries/apache-maven-3.9.0-bin.tar.gz | tar xzf - -C /tmp
+                    /tmp/apache-maven-3.9.0/bin/mvn clean package -DskipTests
                     docker build -t cicd-demo:latest .
                     docker tag cicd-demo:latest cicd-demo:${BUILD_NUMBER}
                 '''
