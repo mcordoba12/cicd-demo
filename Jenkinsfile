@@ -15,7 +15,9 @@ pipeline {
 
         stage('Docker Build & Push') {
             steps {
-                sh 'bash mvnw clean package -DskipTests'
+                sh 'sed -i "s/\\r//" mvnw'
+                sh 'chmod +x mvnw'
+                sh './mvnw clean package -DskipTests'
                 sh 'docker build -t cicd-demo:latest .'
                 sh 'docker tag cicd-demo:latest cicd-demo:${BUILD_NUMBER}'
                 echo "Docker build completado"
