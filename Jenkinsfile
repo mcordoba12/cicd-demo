@@ -16,8 +16,8 @@ pipeline {
         stage('Docker Build & Push') {
             steps {
                 sh '''
-                    apt-get install -y maven 2>/dev/null || true
-                    mvn clean package -DskipTests
+                    docker run --rm -v $(pwd):/workspace -w /workspace maven:3.9-eclipse-temurin-17 \
+                        mvn clean package -DskipTests
                     docker build -t cicd-demo:latest .
                     docker tag cicd-demo:latest cicd-demo:${BUILD_NUMBER}
                 '''
