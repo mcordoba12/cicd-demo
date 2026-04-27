@@ -690,4 +690,4 @@ APP_URL=http://localhost:8080 make systemTest
 - [Jenkinsfile Documentation](https://www.jenkins.io/doc/book/pipeline/)
 - [SonarQube Quality Gates](https://docs.sonarqube.org/latest/user-guide/quality-gates/)
 - [Trivy Vulnerability Scanner](https://github.com/aquasecurity/trivy)
-- [Spring Boot Maven Plugin](https://docs.spring.io/spring-boot/docs/current/maven-plugin/reference/)
+- [Spring Boot Maven Plugin](https://docs.spring.io/spring-boot/docs/current/maven-plugin/reference/)# Updated Mon Apr 27 15:40:12 HPS 2026
