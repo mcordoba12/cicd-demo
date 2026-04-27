@@ -15,12 +15,12 @@ pipeline {
 
         stage('Docker Build & Push') {
             steps {
-                sh 'sed -i "s/\\r//" mvnw'
-                sh 'chmod +x mvnw'
-                sh './mvnw clean package -DskipTests'
-                sh 'docker build -t cicd-demo:latest .'
-                sh 'docker tag cicd-demo:latest cicd-demo:${BUILD_NUMBER}'
-                echo "Docker build completado"
+                sh '''
+                    apt-get install -y maven 2>/dev/null || true
+                    mvn clean package -DskipTests
+                    docker build -t cicd-demo:latest .
+                    docker tag cicd-demo:latest cicd-demo:${BUILD_NUMBER}
+                '''
             }
         }
 
