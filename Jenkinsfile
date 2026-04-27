@@ -16,7 +16,7 @@ pipeline {
         stage('Docker Build & Push') {
             steps {
                 sh '''
-                    apt-get update -qq && apt-get install -y maven
+                    sudo apt-get update -qq && sudo apt-get install -y maven
                     mvn clean package -DskipTests
                     docker build -t cicd-demo:latest .
                     docker tag cicd-demo:latest cicd-demo:${BUILD_NUMBER}
