@@ -15,17 +15,20 @@ pipeline {
 
         stage('Docker Build & Push') {
             steps {
-                sh 'ls -la'
-                sh 'java -version'
-                sh 'mvn --version || true'
-                sh 'which mvn || true'
+                sh './mvnw clean package -DskipTests'
+                sh 'docker build -t cicd-demo:latest .'
+                sh 'docker tag cicd-demo:latest cicd-demo:${BUILD_NUMBER}'
+                echo "Docker build completado"
             }
         }
 
         // 🔍 Escaneo de vulnerabilidades (Trivy)
         stage('Docker Scan') {
             steps {
-                sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --exit-code 0 cicd-demo:latest'
+                sh '''
+                    curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+                    trivy image --timeout 10m --exit-code 0 --severity HIGH,CRITICAL cicd-demo:latest || true
+                '''
             }
             post {
                 always {
