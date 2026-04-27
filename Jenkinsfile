@@ -3,12 +3,12 @@
 pipeline {
     agent any 
 
-    environment{
-       FEATURE_NAME = BRANCH_NAME.replaceAll('[\\(\\)_/]','-').toLowerCase()
-       REGISTRY_PASSWORD = credentials('REGISTRY_PASSWORD')
-       REGISTRY_USERNAME = credentials('REGISTRY_USERNAME')
-       POSTGRES_PASSWORD = credentials('POSTGRES_PASSWORD')
-       APP_NAME = "cicd-demo"
+    environment {
+        FEATURE_NAME = BRANCH_NAME.replaceAll('[\\(\\)_/]','-').toLowerCase()
+        REGISTRY_PASSWORD = "dummy"
+        REGISTRY_USERNAME = "dummy"
+        POSTGRES_PASSWORD = "dummy"
+        APP_NAME = "cicd-demo"
     }
 
     stages {
