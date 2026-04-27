@@ -4,7 +4,7 @@ pipeline {
     agent any 
 
     environment {
-        FEATURE_NAME = BRANCH_NAME.replaceAll('[\\(\\)_/]','-').toLowerCase()
+        FEATURE_NAME = "master"
         REGISTRY_PASSWORD = "dummy"
         REGISTRY_USERNAME = "dummy"
         POSTGRES_PASSWORD = "dummy"
@@ -111,7 +111,6 @@ pipeline {
     post {
         always {
             echo 'Limpiando entorno...'
-            cleanWs()
         }
         failure {
             echo '❌ El pipeline falló - revisar logs arriba'
