@@ -9,7 +9,7 @@ pipeline {
         REGISTRY_USERNAME = "dummy"
         POSTGRES_PASSWORD = "dummy"
         APP_NAME = "cicd-demo"
-        SONARQUBE_URL = "http://localhost:9000"
+        SONARQUBE_URL = "http://sonarqube:9000"
         SONARQUBE_PROJECT_KEY = "cicd-demo"
     }
 
