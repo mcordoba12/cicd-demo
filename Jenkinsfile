@@ -15,9 +15,10 @@ pipeline {
 
         stage('Docker Build & Push') {
             steps {
+                sh 'docker run --rm -v $(pwd):/app -w /app maven:3.8-eclipse-temurin-17 mvn clean package -DskipTests'
                 sh 'docker build -t cicd-demo:latest .'
                 sh 'docker tag cicd-demo:latest cicd-demo:${BUILD_NUMBER}'
-                echo 'Docker build completado (push omitido en entorno local)'
+                echo "Docker build completado - imagen: cicd-demo:latest"
             }
         }
 
