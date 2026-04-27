@@ -25,7 +25,7 @@ pipeline {
                 sh "make dockerScan"
             }
             post {
-                cleanup {
+                always {
                     sh "docker-compose down -v || true"
                 }
             }
@@ -43,7 +43,7 @@ pipeline {
             failFast true            
             parallel {                  
 
-                // 🧠 SonarQube (CORREGIDO)
+                // 🧠 SonarQube
                 stage('Static Code Analysis') {
                     when {
                         anyOf { branch 'master'; branch 'release' }
@@ -85,7 +85,6 @@ pipeline {
         stage('Deploy To dev') {
             environment { 
                 ENV = "dev"
-                APP_DNS = util.selectAppUrl(ENV, FEATURE_NAME, APP_NAME)
                 KUBE_SERVER = credentials("KUBE_API_SERVER")
                 KUBE_TOKEN = credentials("KUBE_DEV_TOKEN")
             }
@@ -98,7 +97,6 @@ pipeline {
             when { expression { BRANCH_NAME ==~ /(master|release-[0-9]+$)/ }} 
             environment { 
                 ENV = "qa"
-                APP_DNS = util.selectAppUrl(ENV, FEATURE_NAME, APP_NAME)
                 KUBE_SERVER = credentials("KUBE_API_SERVER")
                 KUBE_TOKEN = credentials("KUBE_QA_TOKEN")
             }
@@ -112,13 +110,22 @@ pipeline {
         always {
             echo 'Limpiando entorno...'
             sh 'docker system prune -f || true'
+            sh 'docker rm -f cicd-demo || true'
             cleanWs()
 
+            // evitar fallo si util no existe
             script {
-                if(BRANCH_NAME ==~ /(master|release-[0-9]+$)/ ){
-                    util.notifySlack(currentBuild.result)
+                try {
+                    if(BRANCH_NAME ==~ /(master|release-[0-9]+$)/ ){
+                        util.notifySlack(currentBuild.result)
+                    }
+                } catch (e) {
+                    echo "util no definido, se omite notificación"
                 }
             }
+
+            archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+            junit 'target/surefire-reports/*.xml'
         }
 
         failure {
@@ -128,8 +135,5 @@ pipeline {
         success {
             echo '✅ Pipeline exitoso'
         }
-
-        archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-        junit 'target/surefire-reports/*.xml'
     }
 }
