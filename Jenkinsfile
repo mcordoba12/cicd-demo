@@ -94,49 +94,30 @@ pipeline {
         }
 
         stage('Deploy To qa') {
-            when { expression { BRANCH_NAME ==~ /(master|release-[0-9]+$)/ }} 
-            environment { 
+            when { expression { BRANCH_NAME ==~ /(master|release-[0-9]+$)/ }}
+            environment {
                 ENV = "qa"
                 KUBE_SERVER = credentials("KUBE_API_SERVER")
                 KUBE_TOKEN = credentials("KUBE_QA_TOKEN")
             }
             steps {
                 sh "make kubeLogin deploy"
+                sh 'docker system prune -f || true'
+                sh 'docker rm -f cicd-demo || true'
             }
         }
     }
 
     post {
         always {
-            script {
-                echo 'Limpiando entorno...'
-                sh 'docker system prune -f || true'
-                sh 'docker rm -f cicd-demo || true'
-                cleanWs()
-                try {
-                    if(BRANCH_NAME ==~ /(master|release-[0-9]+$)/ ){
-                        util.notifySlack(currentBuild.result)
-                    }
-                } catch (e) {
-                    echo "util no definido, se omite notificación"
-                }
-                try {
-                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-                } catch (e) {
-                    echo "No hay artifacts que archivar"
-                }
-                try {
-                    junit 'target/surefire-reports/*.xml'
-                } catch (e) {
-                    echo "No hay resultados de tests"
-                }
-            }
+            echo 'Limpiando entorno...'
+            cleanWs()
         }
         failure {
-            echo '❌ El pipeline falló'
+            echo '❌ El pipeline falló - revisar logs arriba'
         }
         success {
-            echo '✅ Pipeline exitoso'
+            echo '✅ Pipeline completado exitosamente'
         }
     }
 }
