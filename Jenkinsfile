@@ -36,14 +36,16 @@ pipeline {
         stage('Docker Scan') {
             steps {
                 sh '''
-                    curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+                    # Descargar Trivy a /tmp
+                    TRIVY_HOME="/tmp/trivy"
+                    if [ ! -f "${TRIVY_HOME}/trivy" ]; then
+                        mkdir -p ${TRIVY_HOME}
+                        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b ${TRIVY_HOME}
+                    fi
+
+                    export PATH="${TRIVY_HOME}:$PATH"
                     trivy image --timeout 10m --exit-code 0 --severity HIGH,CRITICAL cicd-demo:latest || true
                 '''
-            }
-            post {
-                always {
-                    sh "docker-compose down -v || true"
-                }
             }
         }
 
