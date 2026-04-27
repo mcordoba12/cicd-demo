@@ -15,11 +15,10 @@ pipeline {
 
         stage('Docker Build & Push') {
             steps {
-                sh 'chmod +x mvnw'
-                sh './mvnw clean package -DskipTests'
-                sh 'docker build -t cicd-demo:latest .'
-                sh 'docker tag cicd-demo:latest cicd-demo:${BUILD_NUMBER}'
-                echo "Docker build completado - imagen: cicd-demo:latest"
+                sh 'ls -la'
+                sh 'java -version'
+                sh 'mvn --version || true'
+                sh 'which mvn || true'
             }
         }
 
