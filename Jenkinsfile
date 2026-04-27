@@ -108,24 +108,26 @@ pipeline {
 
     post {
         always {
-            echo 'Limpiando entorno...'
-            sh 'docker system prune -f || true'
-            sh 'docker rm -f cicd-demo || true'
-            cleanWs()
+            node {
+                echo 'Limpiando entorno...'
+                sh 'docker system prune -f || true'
+                sh 'docker rm -f cicd-demo || true'
+                cleanWs()
 
-            // evitar fallo si util no existe
-            script {
-                try {
-                    if(BRANCH_NAME ==~ /(master|release-[0-9]+$)/ ){
-                        util.notifySlack(currentBuild.result)
+                // evitar fallo si util no existe
+                script {
+                    try {
+                        if(BRANCH_NAME ==~ /(master|release-[0-9]+$)/ ){
+                            util.notifySlack(currentBuild.result)
+                        }
+                    } catch (e) {
+                        echo "util no definido, se omite notificación"
                     }
-                } catch (e) {
-                    echo "util no definido, se omite notificación"
                 }
-            }
 
-            archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-            junit 'target/surefire-reports/*.xml'
+                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                junit 'target/surefire-reports/*.xml'
+            }
         }
 
         failure {
