@@ -82,8 +82,8 @@ pipeline {
                             echo "✅ Quality Gate OK"
                             exit 0
                         elif [ "$STATUS" = "ERROR" ]; then
-                            echo "⚠️  Quality Gate ERROR"
-                            exit 0
+                            echo "❌ Quality Gate FAILED - Security Hotspots detectados"
+                            exit 1
                         fi
                         sleep 5
                     done
