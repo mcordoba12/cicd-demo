@@ -1,5 +1,55 @@
 version: '3.7'
 services:
+  # Jenkins CI/CD Pipeline
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    networks:
+      - cicd-network
+    restart: unless-stopped
+
+  # SonarQube Code Analysis
+  sonarqube:
+    image: sonarqube:latest
+    container_name: sonarqube
+    ports:
+      - "9000:9000"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_logs:/opt/sonarqube/logs
+    environment:
+      - SONARQUBE_JDBC_URL=jdbc:postgresql://postgres:5432/sonarqube
+      - SONARQUBE_JDBC_USERNAME=sonarqube
+      - SONARQUBE_JDBC_PASSWORD=sonarqube
+    networks:
+      - cicd-network
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  # PostgreSQL para SonarQube
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    environment:
+      - POSTGRES_DB=sonarqube
+      - POSTGRES_USER=sonarqube
+      - POSTGRES_PASSWORD=sonarqube
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cicd-network
+    restart: unless-stopped
+
+  # Herramientas de desarrollo existentes
   kubectl:
     image: cmdsolutions/cmdline_kube:13195
     env_file: .env
@@ -19,15 +69,12 @@ services:
   selenium:
     image: selenium/standalone-chrome
 
-  # postgres:
-  #   image:  helderklemp/arminc/clair-db:latest
-  #   env_file: .env
-      
-  # clair:
-  #   image: helderklemp/arminc/clair-local-scan:v2.0.6
-  #   entrypoint: ["/wait-for-it.sh", "postgres:5432", "--"]
-  #   command: ["/clair", "-config=/config/config.yaml"]
-  #   volumes:
-  #     - /var/run/docker.sock:/var/run/docker.sock:Z
-  #   depends_on:
-  #     - postgres  
+networks:
+  cicd-network:
+    driver: bridge
+
+volumes:
+  jenkins_home:
+  sonarqube_data:
+  sonarqube_logs:
+  postgres_data:  
