@@ -1,4 +1,15 @@
 services:
+  # Docker-in-Docker para Jenkins
+  docker-dind:
+    image: docker:dind
+    container_name: docker-dind
+    privileged: true
+    volumes:
+      - docker_data:/var/lib/docker
+    networks:
+      - cicd-network
+    restart: unless-stopped
+
   # Jenkins CI/CD Pipeline
   jenkins:
     build:
@@ -10,12 +21,12 @@ services:
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock:rw
     environment:
-      - DOCKER_HOST=unix:///var/run/docker.sock
+      - DOCKER_HOST=tcp://docker-dind:2375
     networks:
       - cicd-network
-    privileged: true
+    depends_on:
+      - docker-dind
     restart: unless-stopped
 
   # SonarQube Code Analysis
@@ -79,4 +90,5 @@ volumes:
   jenkins_home:
   sonarqube_data:
   sonarqube_logs:
-  postgres_data:  
+  postgres_data:
+  docker_data:  
