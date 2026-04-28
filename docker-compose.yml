@@ -15,6 +15,7 @@ services:
       - DOCKER_HOST=unix:///var/run/docker.sock
     networks:
       - cicd-network
+    privileged: true
     restart: unless-stopped
 
   # SonarQube Code Analysis
